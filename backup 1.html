@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CV Interaktif</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    body {
+      margin: 0;
+      background: #f7f9fc;
+      color: #333;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+      min-height: 100vh;
+    }
+    .form-panel, .cv-panel {
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+/* Biar saat di layar kecil, layout jadi kolom */
+/*@media (max-width: 768px) {
+  .container {
+    flex-direction: row-reverse;
+  }
+
+  .form-panel, .cv-panel {
+    height: 50vh;
+  }
+}*/
+
+
+.form-panel {
+  width: 35%;
+  background: #e6f0ff;
+  border-right: 2px solid #ccc;
+}
+.form-panel h2 {
+  margin-top: 0;
+}
+/*.cv-panel {
+  width: 65%;
+  background: linear-gradient(to right, #0F1E54 35%, white 35%);
+}*/
+.cv-panel {
+  width: 794px;
+  height: 1122px;
+  margin: auto;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  background: white;
+  overflow-y: auto;
+  padding: 20px;
+  box-sizing: border-box;
+
+}
+
+/* Aturan khusus saat cetak */
+  /*@media print {
+    body * {
+      visibility: hidden;
+    }
+
+    .cv-panel, .cv-panel * {
+      visibility: visible;
+    }
+
+    .cv-panel {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 794px;
+      height: 1122px;
+      box-shadow: none;
+    }
+  }*/
+
+
+
+.cv-inner {
+  display: flex;
+  height: 100%;
+}
+.left, .right {
+  padding: 30px;
+}
+.left {
+  width: 35%;
+  background: #0F1E54;
+  color: white;
+}
+.right {
+  width: 65%;
+  background: #f7f9fc;
+}
+.photo {
+  text-align: center;
+  margin-bottom: 20px;
+}
+.photo img {
+  width: 120px;
+  border: 4px solid white;
+}
+h2, h3 {
+  margin-bottom: 10px;
+}
+.section {
+  margin-bottom: 25px;
+}
+.section-title {
+  background: #001F54;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 10px;
+}
+input, textarea, button, select {
+  width: 100%;
+  margin: 5px 0 15px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+.editable {
+  white-space: pre-wrap;
+}
+.hobi-icon {
+  display: inline-block;
+  text-align: center;
+  margin-right: 20px;
+}
+.hobi-icon img {
+  width: 40px;
+  display: block;
+  margin: auto;
+}
+.dynamic-list > div {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.dynamic-list input {
+  flex: 1;
+}
+#printButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+  .form-panel, .cv-panel {
+    width: 100%;
+    padding: 20px;
+  }
+  .cv-inner {
+    flex-direction: column;
+  }
+  .left, .right {
+    width: 100%;
+    padding: 20px;
+  }
+}
+.dynamic-list input {
+  width: calc(100% - 40px); /* Mengurangi lebar untuk memberi ruang pada tombol hapus */
+  height: 30px; /* Mengatur tinggi input */
+}
+.pengalaman-item {
+  margin-bottom: 2px; /* Jarak antar item */
+  padding: 2px; /* Ruang di dalam item */
+  border: 1px solid #ccc; /* Garis batas */
+  border-radius: 5px; /* Sudut melengkung */
+  background-color: #f9f9f9; /* Warna latar belakang */
+}
+/*#cvContent {
+  width: 794px;
+  margin: auto;
+}*/
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="form-panel">
+      <h2>Input Data</h2>
+
+      <label>Pilih Template</label>
+      <select id="templateSelect" onchange="gantiTemplate()">
+        <option value="default">Biru Klasik</option>
+        <option value="putih">Putih Minimalis</option>
+        <option value="gelap">Gelap Elegan</option>
+        <option value="merah">Merah Cerah</option>
+        <option value="hijau">Hijau Pastel</option>
+      </select>
+
+      <label>Foto Profil</label>
+      <input type="file" accept="image/*" onchange="uploadFoto(event)">
+
+      <label>Nama</label>
+      <input type="text" id="inputNama">
+
+      <label>Kontak</label>
+      <textarea id="inputKontak"></textarea>
+
+      <label>Data Pribadi</label>
+      <textarea id="inputPribadi"></textarea>
+
+      <label>Kemampuan</label>
+      <textarea id="inputKemampuan"></textarea>
+
+      <label>Pendidikan</label>
+      <div class="dynamic-list" id="pendidikanList"></div>
+      <button onclick="tambahItem('pendidikanList', ['text'])">Tambah Pendidikan</button>
+
+      <label>Pengalaman</label>
+      <div class="dynamic-list" id="pengalamanList"></div>
+      <button onclick="tambahItem('pengalamanList', ['Nama Perusahaan', 'Jabatan', 'Jobdesk'])">Tambah Pengalaman</button>
+
+      <label>Hobi</label>
+      <div class="dynamic-list" id="hobiList"></div>
+      <button onclick="tambahItem('hobiList', ['text'])">Tambah Hobi</button>
+
+      <button onclick="updateCV()">Perbarui CV</button>
+      <button onclick="downloadPDF()">Download PDF</button>
+      <button id="printButton" onclick="printCV()">Cetak CV</button>
+      <button class="btn-reset" onclick="resetData()">Reset Semua Data</button>
+      <button class="btn-undo" id="undoButton" style="display:none;" onclick="undoReset()">Undo Reset</button>
+    </div>
+
+    <div class="cv-panel" id="cvPanel">
+      <div class="cv-inner" id="cvContent">
+        <div class="left">
+          <div class="photo">
+            <img id="fotoProfil" src="https://api.dicebear.com/9.x/pixel-art/svg" alt="Foto Profil" width="354" height="150">
+          </div>
+          <div class="section">
+            <h3>Kontak</h3>
+            <p class="editable" id="kontak"></p>
+          </div>
+          <div class="section">
+            <h3>Data Pribadi</h3>
+            <p class="editable" id="dataPribadi"></p>
+          </div>
+          <div class="section">
+            <h3>Kemampuan</h3>
+            <p class="editable" id="kemampuan"></p>
+          </div>
+        </div>
+        <div class="right">
+          <div class="section">
+            <h2 class="editable" id="nama">NAMA ANDA</h2>
+          </div>
+          <div class="section">
+            <div class="section-title">Pendidikan</div>
+            <ul class="editable" id="pendidikan"></ul>
+          </div>
+          <div class="section">
+            <div class="section-title">Pengalaman Kerja</div>
+            <ul class="editable" id="pengalaman"></ul>
+          </div>
+          <div class="section">
+            <div class="section-title">Hobi</div>
+            <div class="editable" id="hobi"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isDataChanged = false; // Variabel untuk melacak perubahan data
+    let previousData = null; // Variabel untuk menyimpan data sebelum reset
+
+    // function uploadFoto(event) {
+    //   const reader = new FileReader();
+    //   reader.onload = function() {
+    //     document.getElementById('fotoProfil').src = reader.result;
+    //     localStorage.setItem('fotoProfil', reader.result);
+    //   }
+    //   reader.readAsDataURL(event.target.files[0]);
+    // }
+
+    function uploadFoto(event) {
+      const reader = new FileReader();
+      reader.onload = function() {
+        const foto = reader.result;
+        document.getElementById('fotoProfil').src = foto;
+        localStorage.setItem('fotoProfil', foto);
+      };
+      reader.readAsDataURL(event.target.files[0]);
+
+    }
+
+// Inisialisasi saat halaman dimuat
+    window.onload = function() {
+      const fotoSimpan = localStorage.getItem('fotoProfil');
+      const img = document.getElementById('fotoProfil');
+      img.src = fotoSimpan ? fotoSimpan : 'https://api.dicebear.com/9.x/pixel-art/svg';
+    };
+
+
+    // function tambahItem(idList, placeholders = ['text']) {
+    //   const container = document.getElementById(idList);
+    //   const wrapper = document.createElement('div');
+    //   wrapper.style.alignItems = 'center';
+
+    //   placeholders.forEach(ph => {
+    //     const input = document.createElement('input');
+    //     input.placeholder = ph;
+    //     wrapper.appendChild(input);
+    //   });
+    //   container.appendChild(wrapper);
+    // }
+
+    function tambahItem(idList, placeholders = ['text']) {
+      const container = document.getElementById(idList);
+
+      const wrapper = document.createElement('div');
+      wrapper.style.display = 'flex';
+      wrapper.style.alignItems = 'center';
+      wrapper.style.marginBottom = '8px';
+      wrapper.style.gap = '8px';
+
+  // Buat kontainer untuk input dan tombol hapus
+      const inputWrapper = document.createElement('div');
+      inputWrapper.style.display = 'flex';
+      inputWrapper.style.flex = '1';
+      inputWrapper.style.alignItems = 'center';
+  inputWrapper.style.position = 'relative'; // Agar tombol bisa diletakkan di kanan dalam posisi relatif
+  inputWrapper.style.gap = '8px';
+
+  // Tambahkan input sesuai placeholder
+  placeholders.forEach(ph => {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = ph;
+    input.style.flex = '1'; // Input mengambil sisa ruang
+    input.style.padding = '6px 8px';
+    input.style.fontSize = '14px';
+    input.style.border = '1px solid #ccc';
+    input.style.borderRadius = '4px';
+    inputWrapper.appendChild(input);
+    return input;
+  });
+
+  // Tombol hapus berada di dalam inputWrapper
+  const delBtn = document.createElement('button');
+  delBtn.textContent = '❌';
+  delBtn.style.position = 'absolute';
+  delBtn.style.right = '0'; // Tombol berada paling kanan
+  delBtn.style.top = '50%';
+  delBtn.style.transform = 'translateY(-50%)'; // Posisikan tombol di tengah vertikal input
+  delBtn.style.padding = '0'; // Menghilangkan padding agar tombol kecil
+  delBtn.style.width = '2px'; // Ukuran tombol 2px
+  delBtn.style.height = '2px'; // Ukuran tombol 2px
+  delBtn.style.fontSize = '12px'; // Font ukuran 2px
+  delBtn.style.lineHeight = '1'; // Membuat tombol lebih kompak
+  delBtn.style.border = 'none';
+  delBtn.style.background = 'transparent';
+  delBtn.style.cursor = 'pointer';
+  delBtn.title = 'Hapus item ini';
+  // delBtn.onclick = () => container.removeChild(wrapper);
+  delBtn.onclick = () => {
+      container.removeChild(wrapper);
+      saveDynamicData(); // Simpan data setelah menghapus item
+      };
+  inputWrapper.appendChild(delBtn);
+  wrapper.appendChild(inputWrapper);
+  container.appendChild(wrapper);
+  saveDynamicData(); // Simpan data setelah menambah item
+}
+
+  function saveDynamicData() {
+    const pendidikanList = Array.from(document.querySelectorAll('#pendidikanList input')).map(i => i.value);
+    const pengalamanList = Array.from(document.querySelectorAll('#pengalamanList > div')).map(div => Array.from(div.querySelectorAll('input')).map(i => i.value));
+    const hobiList = Array.from(document.querySelectorAll('#hobiList input')).map(i => i.value);
+
+    const data = {
+      pendidikanList,
+      pengalamanList,
+      hobiList
+    };
+    localStorage.setItem('dynamicData', JSON.stringify(data));
+  }
+
+
+    // Tambahkan event listener untuk input dan textarea
+document.querySelectorAll('.form-panel input, .form-panel textarea').forEach(element => {
+  element.addEventListener('input', () => {
+        isDataChanged = true; // Tandai bahwa data telah diubah
+      });
+});
+
+    // Event listener untuk konfirmasi sebelum keluar
+window.addEventListener('beforeunload', (event) => {
+  if (isDataChanged) {
+    const confirmationMessage = "Anda memiliki data yang belum disimpan. Apakah Anda yakin ingin meninggalkan halaman ini?";
+        event.returnValue = confirmationMessage; // Untuk browser modern
+        return confirmationMessage; // Untuk browser lama
+      }
+    });
+
+function updateCV() {
+  const nama = document.getElementById('inputNama').value;
+  const kontak = document.getElementById('inputKontak').value;
+  const pribadi = document.getElementById('inputPribadi').value;
+  const kemampuan = document.getElementById('inputKemampuan').value;
+
+  document.getElementById('nama').innerText = nama;
+  document.getElementById('kontak').innerText = kontak;
+  document.getElementById('dataPribadi').innerText = pribadi;
+  document.getElementById('kemampuan').innerText = kemampuan;
+
+  const pendidikanUL = document.getElementById('pendidikan');
+  pendidikanUL.innerHTML = '';
+  document.querySelectorAll('#pendidikanList input').forEach(i => {
+    if (i.value.trim()) {
+      const li = document.createElement('li');
+      li.textContent = i.value;
+      pendidikanUL.appendChild(li);
+    }
+  });
+
+  const pengalamanUL = document.getElementById('pengalaman');
+  pengalamanUL.innerHTML = '';
+  document.querySelectorAll('#pengalamanList > div').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs[0].value.trim() || inputs[1].value.trim() || inputs[2].value.trim()) {
+      const li = document.createElement('li');
+      li.className = 'pengalaman-item'; // Menambahkan kelas CSS
+      li.innerHTML = `<strong>${inputs[0].value}</strong> <br>(${inputs[1].value})<br><small>${inputs[2].value}</small>`;
+      pengalamanUL.appendChild(li);
+    }
+  });
+
+  const hobiContainer = document.getElementById('hobi');
+  hobiContainer.innerHTML = '';
+
+  const getIconForHobby = (hobi) => {
+    const h = hobi.toLowerCase();
+
+    if (h.includes('musik') || h.includes('nyanyi') || h.includes('lagu')) return '🎵';
+    if (h.includes('baca') || h.includes('buku') || h.includes('novel')) return '📚';
+    if (h.includes('gambar') || h.includes('lukis') || h.includes('desain') || h.includes('seni')) return '🎨';
+    if (h.includes('main game') || h.includes('game') || h.includes('gaming')) return '🎮';
+    if (h.includes('bola') || h.includes('sepak') || h.includes('futsal')) return '⚽';
+    if (h.includes('panjat') || h.includes('gunung') || h.includes('mendaki')) return '🧗';
+    if (h.includes('sepeda') || h.includes('bersepeda')) return '🚴';
+    if (h.includes('film') || h.includes('nonton') || h.includes('bioskop')) return '🎬';
+    if (h.includes('masak')) return '👨‍🍳';
+    if (h.includes('travel') || h.includes('jalan') || h.includes('wisata')) return '🌍';
+    if (h.includes('renang')) return '🏊';
+    if (h.includes('menulis') || h.includes('puisi') || h.includes('jurnal')) return '✍️';
+    if (h.includes('fotografi') || h.includes('foto')) return '📸';
+
+  return '⭐'; // Default icon
+};
+
+document.querySelectorAll('#hobiList input').forEach(i => {
+  if (i.value.trim()) {
+    const div = document.createElement('div');
+    div.className = 'hobi-icon';
+    const span = document.createElement('span');
+    span.style.fontSize = '24px';
+    span.textContent = getIconForHobby(i.value.trim());
+    div.appendChild(span);
+    div.appendChild(document.createTextNode(' ' + i.value));
+    hobiContainer.appendChild(div);
+  }
+});
+
+
+const data = {
+  nama, kontak, pribadi, kemampuan,
+  pendidikanList: Array.from(document.querySelectorAll('#pendidikanList input')).map(i => i.value),
+  pengalamanList: Array.from(document.querySelectorAll('#pengalamanList > div')).map(div => Array.from(div.querySelectorAll('input')).map(i => i.value)),
+  hobiList: Array.from(document.querySelectorAll('#hobiList input')).map(i => i.value),
+  template: document.getElementById('templateSelect').value
+};
+localStorage.setItem('cvData', JSON.stringify(data));
+      isDataChanged = false; // Reset status setelah menyimpan data
+    }
+
+    function gantiTemplate() {
+      const val = document.getElementById('templateSelect').value;
+      const panel = document.getElementById('cvPanel');
+      const left = panel.querySelector('.left');
+      const right = panel.querySelector('.right');
+
+      switch (val) {
+      case 'putih':
+        panel.style.background = 'white';
+        left.style.background = '#f0f0f0';
+        left.style.color = '#333';
+        break;
+      case 'gelap':
+        panel.style.background = 'linear-gradient(to right, #111 35%, #222 35%)';
+        left.style.background = '#111';
+        left.style.color = '#eee';
+        break;
+      case 'merah':
+        panel.style.background = 'linear-gradient(to right, #b00020 35%, white 35%)';
+        left.style.background = '#b00020';
+        left.style.color = 'white';
+        break;
+      case 'hijau':
+        panel.style.background = 'linear-gradient(to right, #2e7d32 35%, #e8f5e9 35%)';
+        left.style.background = '#2e7d32';
+        left.style.color = 'white';
+        break;
+      default:
+        panel.style.background = 'linear-gradient(to right, #0F1E54 35%, white 35%)';
+        left.style.background = '#0F1E54';
+        left.style.color = 'white';
+      }
+    }
+
+    function muatData() {
+      const data = JSON.parse(localStorage.getItem('cvData'));
+      if (!data) return;
+
+      document.getElementById('inputNama').value = data.nama;
+      document.getElementById('inputKontak').value = data.kontak;
+      document.getElementById('inputPribadi').value = data.pribadi;
+      document.getElementById('inputKemampuan').value = data.kemampuan;
+
+      document.getElementById('templateSelect').value = data.template || 'default';
+      gantiTemplate();
+
+      const pendidikanList = document.getElementById('pendidikanList');
+      pendidikanList.innerHTML = '';
+      data.pendidikanList.forEach(val => {
+        const input = document.createElement('input');
+        input.value = val;
+        pendidikanList.appendChild(input);
+      });
+
+      const pengalamanList = document.getElementById('pengalamanList');
+      pengalamanList.innerHTML = '';
+      data.pengalamanList.forEach(vals => {
+        const wrapper = document.createElement('div');
+        vals.forEach(val => {
+          const input = document.createElement('input');
+          input.value = val;
+          wrapper.appendChild(input);
+        });
+        pengalamanList.appendChild(wrapper);
+      });
+
+      const hobiList = document.getElementById('hobiList');
+      hobiList.innerHTML = '';
+      data.hobiList.forEach(val => {
+        const input = document.createElement('input');
+        input.value = val;
+        hobiList.appendChild(input);
+      });
+
+      if (localStorage.getItem('fotoProfil')) {
+        document.getElementById('fotoProfil').src = localStorage.getItem('fotoProfil');
+      }
+
+      updateCV();
+    }
+
+    async function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'pt', 'a4');
+      await html2canvas(document.getElementById("cvContent")).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', 0, 0, 595, 842);
+        doc.save("CV-Saya.pdf");
+      });
+    }
+
+    async function downloadPDF() {
+      const { jsPDF } = window.jspdf;
+      const cvContent = document.getElementById("cvContent");
+
+  // Set ukuran A4 dalam piksel (konversi dari pt ke px dengan 96 DPI)
+  const a4Width = 595.28; // dalam pt
+  const a4Height = 841.89; // dalam pt
+
+  // Scroll ke atas dulu biar hasil render penuh
+  window.scrollTo(0, 0);
+
+  // Gunakan html2canvas dengan skala tinggi untuk kualitas bagus
+  const canvas = await html2canvas(cvContent, {
+    scale: 2, // kualitas lebih tinggi
+    useCORS: true
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+  const imgProps = {
+    width: canvas.width,
+    height: canvas.height
+  };
+
+  // Hitung proporsi skala agar pas dengan ukuran A4
+  const ratio = Math.min(a4Width / imgProps.width, a4Height / imgProps.height);
+  const imgWidth = imgProps.width * ratio;
+  const imgHeight = imgProps.height * ratio;
+
+  const doc = new jsPDF('p', 'pt', 'a4');
+  doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+  doc.save('CV-Saya.pdf');
+}
+
+// async function downloadPDF() {
+//   const { jsPDF } = window.jspdf;
+//   const cvContent = document.getElementById("cvContent");
+
+//   // Buat kloning untuk rendering statis (tampilan desktop)
+//   const clone = cvContent.cloneNode(true);
+//   clone.style.width = '794px'; // Lebar A4 dalam px (96 DPI)
+//   clone.style.padding = '20px';
+//   clone.style.background = 'white';
+//   clone.style.transform = 'scale(1)';
+//   clone.style.transformOrigin = 'top left';
+//   clone.style.fontSize = '14px';
+
+//   // Tempel ke body (di luar layar agar tidak mengganggu)
+//   const container = document.createElement('div');
+//   container.style.position = 'absolute';
+//   container.style.top = '-10000px';
+//   container.appendChild(clone);
+//   document.body.appendChild(container);
+
+//   // Render sebagai gambar
+//   const canvas = await html2canvas(clone, {
+//     scale: 2,
+//     useCORS: true
+//   });
+
+//   // Hapus kloning setelah render
+//   document.body.removeChild(container);
+
+//   const imgData = canvas.toDataURL('image/png');
+//   const pdf = new jsPDF('p', 'pt', 'a4');
+
+//   // Ukuran A4 (595 x 842 pt)
+//   const pdfWidth = 595.28;
+//   const pdfHeight = 841.89;
+//   const imgProps = {
+//     width: canvas.width,
+//     height: canvas.height
+//   };
+
+//   const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
+//   const imgWidth = imgProps.width * ratio;
+//   const imgHeight = imgProps.height * ratio;
+
+//   pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+//   pdf.save("CV-Saya.pdf");
+// }
+
+
+    function printCV() {
+      const printContent = document.getElementById("cvContent").innerHTML;
+      const originalContent = document.body.innerHTML;
+      document.body.innerHTML = `<div style="padding:20px">${printContent}</div>`;
+      window.print();
+      document.body.innerHTML = originalContent;
+      location.reload();
+    }
+
+    function resetData() {
+      if (confirm("Yakin ingin menghapus semua data CV?")) {
+        // Simpan data saat ini sebelum di-reset
+        previousData = JSON.parse(localStorage.getItem('cvData'));
+        localStorage.removeItem('cvData');
+        localStorage.removeItem('fotoProfil');
+        document.querySelectorAll('.form-panel input, .form-panel textarea').forEach(e => e.value = '');
+        document.getElementById('pendidikanList').innerHTML = '';
+        document.getElementById('pengalamanList').innerHTML = '';
+        document.getElementById('hobiList').innerHTML = '';
+        document.getElementById('fotoProfil').src = "https://api.dicebear.com/9.x/pixel-art/svg";
+        document.getElementById('templateSelect').value = 'default';
+        gantiTemplate();
+        updateCV();
+        // Tampilkan tombol Undo
+        document.getElementById('undoButton').style.display = 'block';
+      }
+    }
+
+    function undoReset() {
+      if (previousData) {
+        // Kembalikan data yang disimpan sebelumnya
+        localStorage.setItem('cvData', JSON.stringify(previousData));
+        muatData(); // Muat data kembali ke form
+        previousData = null; // Reset previousData
+        document.getElementById('undoButton').style.display = 'none'; // Sembunyikan tombol Undo
+        updateCV();
+      }
+    }
+
+    window.onload = muatData; // Muat data saat halaman dimuat
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>
